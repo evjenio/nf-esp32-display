@@ -5,6 +5,8 @@ VisualStudioVersion = 17.1.32407.343
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{11A8DD76-328B-46DF-9F39-F559912D0360}") = "NfEsp32Display", "src\NfEsp32Display\NfEsp32Display.nfproj", "{17AC0C0C-6CA3-4C27-8F30-ABCA976D8B6E}"
 EndProject
+Project("{11A8DD76-328B-46DF-9F39-F559912D0360}") = "NfEsp32Display.Epaper", "src\NfEsp32Display.Epaper\NfEsp32Display.Epaper.nfproj", "{3EFC2288-E4DC-49C1-A38E-8917601118DB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,6 +19,12 @@ Global
 		{17AC0C0C-6CA3-4C27-8F30-ABCA976D8B6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17AC0C0C-6CA3-4C27-8F30-ABCA976D8B6E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{17AC0C0C-6CA3-4C27-8F30-ABCA976D8B6E}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{3EFC2288-E4DC-49C1-A38E-8917601118DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3EFC2288-E4DC-49C1-A38E-8917601118DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3EFC2288-E4DC-49C1-A38E-8917601118DB}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{3EFC2288-E4DC-49C1-A38E-8917601118DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3EFC2288-E4DC-49C1-A38E-8917601118DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3EFC2288-E4DC-49C1-A38E-8917601118DB}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

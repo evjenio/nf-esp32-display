@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Threading;
+using NfEsp32Display.Epaper;
 
 #nullable enable
 
@@ -7,16 +8,12 @@ namespace NfEsp32Display
 {
     public class Program
     {
-        const string Ssid = "NanoFrameworkDevice";
-        const string Password = "11111111";
-
         public static void Main()
         {
-            var network = Wifi.SearchFor(Ssid);
-            var status = Wifi.ConnectTo(network, Password);
-
-            Debug.WriteLine($"Connection status: {status}");
-            Debug.WriteLine($"IP: {Wifi.GetIp()}");
+            var display = new Display();
+            display.Init();
+            display.FillScreen(Color.Black);
+            display.Update();
 
             Thread.Sleep(Timeout.Infinite);
         }
