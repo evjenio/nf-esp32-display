@@ -12,8 +12,9 @@ namespace NfEsp32Display
         {
             var display = new Display();
             display.Init();
-            display.FillScreen(Color.Black);
+            display.FillScreen(Color.White);
             display.Update();
+            display.EraseDisplay();
 
             Thread.Sleep(Timeout.Infinite);
         }

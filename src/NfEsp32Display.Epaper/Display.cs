@@ -12,6 +12,7 @@ namespace NfEsp32Display.Epaper
         private readonly GpioController gpioController;
         private readonly GpioPin busyPin;
         private readonly GpioPin resetPin;
+        private readonly GpioPin dcPin;
 
         // the physical number of pixels (for controller parameter)
         const int GxGDEH0213B73_X_PIXELS = 128;
@@ -86,11 +87,15 @@ namespace NfEsp32Display.Epaper
             gpioController = new GpioController();
             busyPin = gpioController.OpenPin(ELINK_BUSY, PinMode.Input);
             resetPin = gpioController.OpenPin(ELINK_RESET, PinMode.Output);
+            dcPin = gpioController.OpenPin(ELINK_DC, PinMode.Output);
 
             var connectionSettings = new SpiConnectionSettings(1, ELINK_CS)
             {
-                ClockFrequency = 4_000_000 // 4MHz
+                ClockFrequency = 4_000_000, // 4MHz
+                Mode = SpiMode.Mode0,
+                DataFlow = DataFlow.MsbFirst,
             };
+
             spiDevice = new SpiDevice(connectionSettings);
         }
 
@@ -100,6 +105,7 @@ namespace NfEsp32Display.Epaper
             gpioController.Dispose();
             busyPin.Dispose();
             resetPin.Dispose();
+            dcPin.Dispose();
         }
 
         public void Init()
@@ -107,6 +113,11 @@ namespace NfEsp32Display.Epaper
             resetPin.Write(PinValue.Low);
             Thread.Sleep(10);
             resetPin.Write(PinValue.High);
+            Thread.Sleep(200);
+
+            WaitWhileBusy();
+            WriteCommand(0x12);
+            WaitWhileBusy();
         }
 
         public void FillScreen(Color color)
@@ -144,11 +155,30 @@ namespace NfEsp32Display.Epaper
             }
         }
 
+        public void EraseDisplay()
+        {
+            InitFull(0x01);
+            WriteCommand(0x24);
+            for (int i = 0; i < GxGDEH0213B73_BUFFER_SIZE; i++)
+            {
+                WriteData(0xFF);
+            }
+            // update erase buffer
+            WriteCommand(0x26);
+            for (int i = 0; i < GxGDEH0213B73_BUFFER_SIZE; i++)
+            {
+                WriteData(0xFF);
+            }
+            UpdateFull();
+            PowerOff();
+        }
+
         private void WaitWhileBusy()
         {
             while (IsBusy())
             {
                 // TODO: timeout
+                Debug.WriteLine("EPD: Busy");
             }
         }
 
@@ -161,7 +191,9 @@ namespace NfEsp32Display.Epaper
                 Debug.WriteLine($"EPD: busy on command {command}");
                 WaitWhileBusy();
             }
+            dcPin.Write(PinValue.Low);
             spiDevice.WriteByte(command);
+            dcPin.Write(PinValue.High);
         }
 
         private void WriteData(byte data)
