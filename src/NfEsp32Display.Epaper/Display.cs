@@ -3,6 +3,7 @@ using System.Device.Gpio;
 using System.Device.Spi;
 using System.Diagnostics;
 using System.Threading;
+using nanoFramework.Hardware.Esp32;
 
 namespace NfEsp32Display.Epaper
 {
@@ -15,28 +16,28 @@ namespace NfEsp32Display.Epaper
         private readonly GpioPin dcPin;
 
         // the physical number of pixels (for controller parameter)
-        const int GxGDEH0213B73_X_PIXELS = 128;
-        const int GxGDEH0213B73_Y_PIXELS = 250;
+        const int GDEH0213B73_X_PIXELS = 128;
+        const int GDEH0213B73_Y_PIXELS = 250;
 
         // the logical width and height of the display
-        const int GxGDEH0213B73_WIDTH = GxGDEH0213B73_X_PIXELS;
-        const int GxGDEH0213B73_HEIGHT = GxGDEH0213B73_Y_PIXELS;
+        const int GDEH0213B73_WIDTH = GDEH0213B73_X_PIXELS;
+        const int GDEH0213B73_HEIGHT = GDEH0213B73_Y_PIXELS;
 
         // note: the visible number of display pixels is 122*250, see GDEH0213B72 V1.1 Specification.pdf
-        const int GxGDEH0213B73_VISIBLE_WIDTH = 122;
+        const int GDEH0213B73_VISIBLE_WIDTH = 122;
 
-        const int GxGDEH0213B73_BUFFER_SIZE = (GxGDEH0213B73_WIDTH) * (GxGDEH0213B73_HEIGHT) / 8;
+        const int GDEH0213B73_BUFFER_SIZE = (GDEH0213B73_WIDTH) * (GDEH0213B73_HEIGHT) / 8;
 
-        //#define SPI_MOSI 23
-        //#define SPI_MISO -1
-        //#define SPI_CLK 18
+        const int SPI_MOSI = 23;
+        // const int SPI_MISO = -1;
+        const int SPI_CLK = 18;
 
         const int ELINK_CS = 5;
         const int ELINK_BUSY = 4;
         const int ELINK_RESET = 16;
         const int ELINK_DC = 17;
 
-        byte[] _buffer = new byte[GxGDEH0213B73_BUFFER_SIZE];
+        byte[] _buffer = new byte[GDEH0213B73_BUFFER_SIZE];
 
         private readonly byte[] LUT_DATA_full =
         {
@@ -89,6 +90,9 @@ namespace NfEsp32Display.Epaper
             resetPin = gpioController.OpenPin(ELINK_RESET, PinMode.Output);
             dcPin = gpioController.OpenPin(ELINK_DC, PinMode.Output);
 
+            Configuration.SetPinFunction(SPI_MOSI, DeviceFunction.SPI1_MOSI);
+            Configuration.SetPinFunction(SPI_CLK, DeviceFunction.SPI1_CLOCK);
+
             var connectionSettings = new SpiConnectionSettings(1, ELINK_CS)
             {
                 ClockFrequency = 4_000_000, // 4MHz
@@ -110,14 +114,13 @@ namespace NfEsp32Display.Epaper
 
         public void Init()
         {
-            resetPin.Write(PinValue.Low);
-            Thread.Sleep(10);
-            resetPin.Write(PinValue.High);
-            Thread.Sleep(200);
+            HwReset();
 
-            WaitWhileBusy();
-            WriteCommand(0x12);
-            WaitWhileBusy();
+            WaitWhileBusy("HW reset");
+            WriteCommand(0x12); // sw reset
+            WaitWhileBusy("SW reset");
+
+            InitFull(0x03);
         }
 
         public void FillScreen(Color color)
@@ -130,7 +133,7 @@ namespace NfEsp32Display.Epaper
 
         public void Update()
         {
-            InitFull(0x03);
+            //InitFull(0x03);
 
             WriteCommand(0x24);
             WriteBuffer();
@@ -143,11 +146,11 @@ namespace NfEsp32Display.Epaper
 
             void WriteBuffer()
             {
-                for (ushort y = 0; y < GxGDEH0213B73_HEIGHT; y++)
+                for (ushort y = 0; y < GDEH0213B73_HEIGHT; y++)
                 {
-                    for (ushort x = 0; x < GxGDEH0213B73_WIDTH / 8; x++)
+                    for (ushort x = 0; x < GDEH0213B73_WIDTH / 8; x++)
                     {
-                        ushort idx = (ushort)(y * (GxGDEH0213B73_WIDTH / 8) + x);
+                        ushort idx = (ushort)(y * (GDEH0213B73_WIDTH / 8) + x);
                         byte data = (idx < _buffer.Length) ? _buffer[idx] : (byte)0x00;
                         WriteData(data);
                     }
@@ -159,13 +162,13 @@ namespace NfEsp32Display.Epaper
         {
             InitFull(0x01);
             WriteCommand(0x24);
-            for (int i = 0; i < GxGDEH0213B73_BUFFER_SIZE; i++)
+            for (int i = 0; i < GDEH0213B73_BUFFER_SIZE; i++)
             {
                 WriteData(0xFF);
             }
             // update erase buffer
             WriteCommand(0x26);
-            for (int i = 0; i < GxGDEH0213B73_BUFFER_SIZE; i++)
+            for (int i = 0; i < GDEH0213B73_BUFFER_SIZE; i++)
             {
                 WriteData(0xFF);
             }
@@ -173,12 +176,25 @@ namespace NfEsp32Display.Epaper
             PowerOff();
         }
 
-        private void WaitWhileBusy()
+
+        private void HwReset()
         {
+            resetPin.Write(PinValue.Low);
+            Thread.Sleep(10);
+            resetPin.Write(PinValue.High);
+            Thread.Sleep(10);
+        }
+
+        private void WaitWhileBusy(string comment = null)
+        {
+            bool debug = true;
             while (IsBusy())
             {
-                // TODO: timeout
-                Debug.WriteLine("EPD: Busy");
+                if (debug)
+                {
+                    Debug.WriteLine($"EPD: Busy: {comment} ...");
+                    debug = false;
+                }
             }
         }
 
@@ -186,9 +202,9 @@ namespace NfEsp32Display.Epaper
 
         private void WriteCommand(byte command)
         {
-            if (busyPin.Read() == PinValue.High)
+            if (IsBusy())
             {
-                Debug.WriteLine($"EPD: busy on command {command}");
+                Debug.WriteLine($"EPD: busy before command {command:X}");
                 WaitWhileBusy();
             }
             dcPin.Write(PinValue.Low);
@@ -229,15 +245,15 @@ namespace NfEsp32Display.Epaper
             WriteCommand(0x22);
             WriteData(0xc7);
             WriteCommand(0x20);
-            WaitWhileBusy();
+            WaitWhileBusy("Full update");
         }
 
         private void UpdatePart()
         {
             WriteCommand(0x22);
-            WriteData(0x04); // use Mode 1 for GxEPD
+            WriteData(0x04); // use Mode 1 for EPD
             WriteCommand(0x20);
-            WaitWhileBusy();
+            WaitWhileBusy("Part update");
         }
 
         private void InitDisplay(byte em)
@@ -284,8 +300,8 @@ namespace NfEsp32Display.Epaper
 
         private void SetRamDataEntryMode(byte em)
         {
-            const ushort xPixelsPar = GxGDEH0213B73_X_PIXELS - 1;
-            const ushort yPixelsPar = GxGDEH0213B73_Y_PIXELS - 1;
+            const ushort xPixelsPar = GDEH0213B73_X_PIXELS - 1;
+            const ushort yPixelsPar = GDEH0213B73_Y_PIXELS - 1;
             em = (byte)Math.Min(em, 0x03);
             WriteCommand(0x11);
             WriteData(em);

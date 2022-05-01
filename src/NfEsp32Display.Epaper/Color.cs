@@ -2,7 +2,7 @@
 {
     public enum Color : byte
     {
-        Black = 0xFF,
-        White = 0x00
+        Black = 0x00,
+        White = 0xFF
     }
 }

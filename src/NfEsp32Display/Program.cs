@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using System;
 using System.Threading;
 using NfEsp32Display.Epaper;
 
@@ -14,7 +14,12 @@ namespace NfEsp32Display
             display.Init();
             display.FillScreen(Color.White);
             display.Update();
-            display.EraseDisplay();
+
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+
+            display.FillScreen(Color.Black);
+            display.Update();
+            //display.EraseDisplay();
 
             Thread.Sleep(Timeout.Infinite);
         }
