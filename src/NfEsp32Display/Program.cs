@@ -12,14 +12,19 @@ namespace NfEsp32Display
         {
             var display = new Display();
             display.Init();
-            display.FillScreen(Color.White);
-            display.Update();
 
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            while (true)
+            {
+                display.FillScreen(Color.White);
+                display.UpdateWindow(0, 0, display.Width, display.Height);
 
-            display.FillScreen(Color.Black);
-            display.Update();
-            //display.EraseDisplay();
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+
+                display.FillScreen(Color.Black);
+                display.UpdateWindow(0, 0, display.Width, display.Height);
+
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+            }
 
             Thread.Sleep(Timeout.Infinite);
         }

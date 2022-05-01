@@ -103,6 +103,9 @@ namespace NfEsp32Display.Epaper
             spiDevice = new SpiDevice(connectionSettings);
         }
 
+        public int Width => GDEH0213B73_WIDTH;
+        public int Height => GDEH0213B73_HEIGHT;
+
         public void Dispose()
         {
             spiDevice.Dispose();
@@ -119,8 +122,6 @@ namespace NfEsp32Display.Epaper
             WaitWhileBusy("HW reset");
             WriteCommand(0x12); // sw reset
             WaitWhileBusy("SW reset");
-
-            InitFull(0x03);
         }
 
         public void FillScreen(Color color)
@@ -133,7 +134,7 @@ namespace NfEsp32Display.Epaper
 
         public void Update()
         {
-            //InitFull(0x03);
+            InitFull(0x03);
 
             WriteCommand(0x24);
             WriteBuffer();
@@ -151,6 +152,42 @@ namespace NfEsp32Display.Epaper
                     for (ushort x = 0; x < GDEH0213B73_WIDTH / 8; x++)
                     {
                         ushort idx = (ushort)(y * (GDEH0213B73_WIDTH / 8) + x);
+                        byte data = (idx < _buffer.Length) ? _buffer[idx] : (byte)0x00;
+                        WriteData(data);
+                    }
+                }
+            }
+        }
+
+        public void UpdateWindow(int x, int y, int w, int h)
+        {
+            if (x >= GDEH0213B73_WIDTH) return;
+            if (y >= GDEH0213B73_HEIGHT) return;
+            var xe = Math.Min(GDEH0213B73_WIDTH, x + w) - 1;
+            var ye = Math.Min(GDEH0213B73_HEIGHT, y + h) - 1;
+            var xs_d8 = x / 8;
+            var xe_d8 = xe / 8;
+            
+            InitPart(0x03);
+            WriteBufferWithCommand(0x24);
+
+            UpdatePart();
+            Thread.Sleep(300);
+            // update erase buffer
+            WriteBufferWithCommand(0x26);
+            Thread.Sleep(300);
+
+            void WriteBufferWithCommand(byte command)
+            {
+                SetRamArea((byte)xs_d8, (byte)xe_d8, (byte)(y % 256), (byte)(y / 256), (byte)(ye % 256), (byte)(ye / 256)); // X-source area,Y-gate area
+                SetRamPointer((byte)xs_d8, (byte)(y % 256), (byte)(y / 256)); // set ram
+                WaitWhileBusy();
+                WriteCommand(command);
+                for (var y1 = y; y1 <= ye; y1++)
+                {
+                    for (var x1 = xs_d8; x1 <= xe_d8; x1++)
+                    {
+                        var idx = y1 * (GDEH0213B73_WIDTH / 8) + x1;
                         byte data = (idx < _buffer.Length) ? _buffer[idx] : (byte)0x00;
                         WriteData(data);
                     }
