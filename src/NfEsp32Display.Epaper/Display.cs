@@ -37,7 +37,7 @@ namespace NfEsp32Display.Epaper
         const int ELINK_RESET = 16;
         const int ELINK_DC = 17;
 
-        byte[] _buffer = new byte[GDEH0213B73_BUFFER_SIZE];
+        private byte[] _buffer = new byte[GDEH0213B73_BUFFER_SIZE];
 
         private readonly byte[] LUT_DATA_full =
         {
@@ -57,8 +57,6 @@ namespace NfEsp32Display.Epaper
           0x00, 0x00, 0x00, 0x00, 0x00,
           0x00, 0x00, 0x00, 0x00, 0x00,
           0x00, 0x00, 0x00, 0x00, 0x00,
-
-          //0x15, 0x41, 0xA8, 0x32, 0x50, 0x2C, 0x0B,
         };
 
         private readonly byte[] LUT_DATA_part =
@@ -79,8 +77,6 @@ namespace NfEsp32Display.Epaper
           0x00, 0x00, 0x00, 0x00, 0x00,
           0x00, 0x00, 0x00, 0x00, 0x00,
           0x00, 0x00, 0x00, 0x00, 0x00,
-
-          //0x15, 0x41, 0xA8, 0x32, 0x50, 0x2C, 0x0B,
         };
 
         public Display()
@@ -103,8 +99,9 @@ namespace NfEsp32Display.Epaper
             spiDevice = new SpiDevice(connectionSettings);
         }
 
-        public int Width => GDEH0213B73_WIDTH;
-        public int Height => GDEH0213B73_HEIGHT;
+        public int Width { get; private set; } = GDEH0213B73_WIDTH;
+        public int Height { get; private set; } = GDEH0213B73_HEIGHT;
+        public int Rotation { get; private set; }
 
         public void Dispose()
         {
@@ -163,11 +160,14 @@ namespace NfEsp32Display.Epaper
         {
             if (x >= GDEH0213B73_WIDTH) return;
             if (y >= GDEH0213B73_HEIGHT) return;
+
+            Rotate(ref x, ref y, ref w, ref h);
+
             var xe = Math.Min(GDEH0213B73_WIDTH, x + w) - 1;
             var ye = Math.Min(GDEH0213B73_HEIGHT, y + h) - 1;
             var xs_d8 = x / 8;
             var xe_d8 = xe / 8;
-            
+
             InitPart(0x03);
             WriteBufferWithCommand(0x24);
 
@@ -213,6 +213,92 @@ namespace NfEsp32Display.Epaper
             PowerOff();
         }
 
+        public void EraseDisplayFast()
+        {
+            FillScreen(Color.White);
+            UpdateWindow(0, 0, Width, Height);
+        }
+
+        public void SetRotation(int x)
+        {
+            Rotation = (x & 3);
+            switch (Rotation)
+            {
+                case 0:
+                case 2:
+                    Width = GDEH0213B73_WIDTH;
+                    Height = GDEH0213B73_HEIGHT;
+                    break;
+                case 1:
+                case 3:
+                    Width = GDEH0213B73_HEIGHT;
+                    Height = GDEH0213B73_WIDTH;
+                    break;
+            }
+        }
+
+        public void DrawPixel(int x, int y, Color color)
+        {
+            if (x < 0 || x >= Width || y < 0 || y >= Height)
+            {
+                return;
+            }
+
+            switch (Rotation)
+            {
+                case 1:
+                    Swap(ref x, ref y);
+                    x = GDEH0213B73_VISIBLE_WIDTH - x - 1;
+                    break;
+                case 2:
+                    x = GDEH0213B73_VISIBLE_WIDTH - x - 1;
+                    y = GDEH0213B73_HEIGHT - y - 1;
+                    break;
+                case 3:
+                    Swap(ref x, ref y);
+                    y = GDEH0213B73_HEIGHT - y - 1;
+                    break;
+            }
+
+            var i = x / 8 + y * GDEH0213B73_WIDTH / 8;
+
+            if (color == Color.White)
+            {
+                _buffer[i] = (byte)(_buffer[i] | (1 << (7 - x % 8)));
+            }
+            else
+            {
+                _buffer[i] = (byte)(_buffer[i] & (0xFF ^ (1 << (7 - x % 8))));
+            }
+        }
+
+        private void Swap(ref int i, ref int j)
+        {
+            var k = j;
+            j = i;
+            i = k;
+        }
+
+        private void Rotate(ref int x, ref int y, ref int w, ref int h)
+        {
+            switch (Rotation)
+            {
+                case 1:
+                    Swap(ref x, ref y);
+                    Swap(ref w, ref h);
+                    x = GDEH0213B73_WIDTH - x - w - 1;
+                    break;
+                case 2:
+                    x = GDEH0213B73_WIDTH - x - w - 1;
+                    y = GDEH0213B73_HEIGHT - y - h - 1;
+                    break;
+                case 3:
+                    Swap(ref x, ref y);
+                    Swap(ref w, ref h);
+                    y = GDEH0213B73_HEIGHT - y - h - 1;
+                    break;
+            }
+        }
 
         private void HwReset()
         {
