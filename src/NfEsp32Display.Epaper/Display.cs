@@ -7,7 +7,7 @@ using nanoFramework.Hardware.Esp32;
 
 namespace NfEsp32Display.Epaper
 {
-    public class Display : IDisposable
+    public partial class Display : IDisposable
     {
         private readonly SpiDevice spiDevice;
         private readonly GpioController gpioController;
@@ -239,9 +239,9 @@ namespace NfEsp32Display.Epaper
 
         public void DrawBitmap(SpanByte bitmap, int x, int y, int w, int h, Color color)
         {
-            var inverse_color = (color != Color.White) ? Color.White : Color.Black;
-            var fg_color = color;
-            var bg_color = inverse_color;
+            var inverseColor = (color != Color.White) ? Color.White : Color.Black;
+            var fgColor = color;
+            var bgColor = inverseColor;
 
             var byteWidth = (w + 7) / 8;
             byte @byte = 0;
@@ -259,10 +259,10 @@ namespace NfEsp32Display.Epaper
                         @byte = bitmap[j * byteWidth + i / 8];
                     }
                     // overwrite mode
-                    var pixelcolor = (@byte & 0x80) > 0 ? fg_color : bg_color;
+                    var pixelColor = (@byte & 0x80) > 0 ? fgColor : bgColor;
                     var xd = x + i;
                     var yd = y + j;
-                    DrawPixel(xd, yd, pixelcolor);
+                    DrawPixel(xd, yd, pixelColor);
                 }
             }
         }

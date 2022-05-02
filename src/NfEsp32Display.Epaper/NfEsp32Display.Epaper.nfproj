@@ -23,6 +23,8 @@
   <ItemGroup>
     <Compile Include="Color.cs" />
     <Compile Include="Display.cs" />
+    <Compile Include="Display.text.cs" />
+    <Compile Include="Fonts.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
