@@ -18,8 +18,10 @@
   </PropertyGroup>
   <Import Project="$(NanoFrameworkProjectSystemPath)NFProjectSystem.props" Condition="Exists('$(NanoFrameworkProjectSystemPath)NFProjectSystem.props')" />
   <ItemGroup>
+    <Compile Include="Resources\Bitmaps.PixelArt.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resources\Bitmaps.Dino.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NfEsp32Display.Epaper\NfEsp32Display.Epaper.nfproj" />

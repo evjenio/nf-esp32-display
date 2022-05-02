@@ -507,7 +507,7 @@ namespace NfEsp32Display.Epaper
             WriteCommand(0x22);
             WriteData(0xc0);
             WriteCommand(0x20);
-            WaitWhileBusy();
+            WaitWhileBusy("power on");
         }
 
         private void PowerOff()
@@ -515,7 +515,7 @@ namespace NfEsp32Display.Epaper
             WriteCommand(0x22);
             WriteData(0xc3);
             WriteCommand(0x20);
-            WaitWhileBusy();
+            WaitWhileBusy("power off");
         }
     }
 }
