@@ -37,7 +37,7 @@ namespace NfEsp32Display.Epaper
         const int ELINK_RESET = 16;
         const int ELINK_DC = 17;
 
-        private byte[] _buffer = new byte[GDEH0213B73_BUFFER_SIZE];
+        private readonly byte[] _buffer = new byte[GDEH0213B73_BUFFER_SIZE];
 
         private readonly byte[] LUT_DATA_full =
         {
@@ -237,6 +237,38 @@ namespace NfEsp32Display.Epaper
             }
         }
 
+        public void DrawBitmap(SpanByte bitmap, int x, int y, int w, int h, Color color)
+        {
+            var inverse_color = (color != Color.White) ? Color.White : Color.Black;
+            var fg_color = color;
+            var bg_color = inverse_color;
+
+            var byteWidth = (w + 7) / 8;
+            byte @byte = 0;
+
+            for (var j = 0; j < h; j++)
+            {
+                for (var i = 0; i < w; i++)
+                {
+                    if ((i & 7) > 0)
+                    {
+                        @byte <<= 1;
+                    }
+                    else
+                    {
+                        @byte = bitmap[j * byteWidth + i / 8];
+                    }
+                    // overwrite mode
+                    var pixelcolor = (@byte & 0x80) > 0 ? fg_color : bg_color;
+                    var xd = x + i;
+                    var yd = y + j;
+                    DrawPixel(xd, yd, pixelcolor);
+                }
+            }
+        }
+
+
+
         public void DrawPixel(int x, int y, Color color)
         {
             if (x < 0 || x >= Width || y < 0 || y >= Height)
@@ -340,7 +372,7 @@ namespace NfEsp32Display.Epaper
             spiDevice.WriteByte(data);
         }
 
-        private void WriteData(byte[] data)
+        private void WriteData(SpanByte data)
         {
             spiDevice.Write(data);
         }
