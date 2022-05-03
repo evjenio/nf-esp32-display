@@ -525,7 +525,7 @@
         private int m_length;
         private int _version;
         [NonSerialized]
-        private Object _syncRoot;
+        private Object _syncRoot = new object();
 
         private const int _ShrinkThreshold = 256;
     }

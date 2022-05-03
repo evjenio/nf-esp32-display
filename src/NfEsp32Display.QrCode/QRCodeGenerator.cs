@@ -649,7 +649,7 @@ namespace NfEsp32Display.QrCode
             var version = this.capacityTable.Where(
                 x => x.Details.Count(
                     y => (y.ErrorCorrectionLevel == eccLevel
-                          && y.CapacityDict[encMode] >= Convert.ToInt32(length))) > 0)
+                          && (int)y.CapacityDict[encMode] >= length)) > 0)
                 .Select(x => new
                 {
                     version = x.Version,
@@ -711,9 +711,9 @@ namespace NfEsp32Display.QrCode
 
         private List<string> BinaryStringToBitBlockList(string bitString)
         {
-            return bitString.ToCharArray().Select((x, i) => new { Index = i, Value = x })
+            return bitString.ToCharArray().AsEnumerable<char>().Select((x, i) => new { Index = i, Value = x })
                 .GroupBy(x => x.Index / 8)
-                .Select(x => string.Join("", x.Select(v => v.Value.ToString()).ToArray()))
+                .Select(x => x.Select(v => v.Value.ToString()).Join())
                 .ToList();
         }
 
@@ -816,14 +816,14 @@ namespace NfEsp32Display.QrCode
             while (plainText.Length >= 2)
             {
                 var token = plainText.Substring(0, 2);
-                var dec = this.alphanumEncDict[token[0]] * 45 + this.alphanumEncDict[token[1]];
+                var dec = ((int)this.alphanumEncDict[token[0]]) * 45 + (int)this.alphanumEncDict[token[1]];
                 codeText += DecToBin(dec, 11);
                 plainText = plainText.Substring(2);
 
             }
             if (plainText.Length > 0)
             {
-                codeText += DecToBin(this.alphanumEncDict[plainText[0]], 6);
+                codeText += DecToBin((int)this.alphanumEncDict[plainText[0]], 6);
             }
             return codeText;
         }
@@ -908,7 +908,7 @@ namespace NfEsp32Display.QrCode
             }
             resultPolynom.PolyItems.RemoveAll(x => toGlue.Contains(x.Exponent));
             resultPolynom.PolyItems.AddRange(gluedPolynoms);
-            resultPolynom.PolyItems = resultPolynom.PolyItems.OrderByDescending(x => x.Exponent).ToList();
+            resultPolynom.PolyItems.SortByDescending(x => x.Exponent);
             return resultPolynom;
         }
 
@@ -1019,7 +1019,7 @@ namespace NfEsp32Display.QrCode
                     {
                         new VersionInfoDetails(
                              EccLevel.L,
-                             new Dictionary<EncodingMode,int>(){
+                             new Hashtable(){
                                  { EncodingMode.Numeric, this.capacityBaseValues[i] },
                                  { EncodingMode.Alphanumeric, this.capacityBaseValues[i+1] },
                                  { EncodingMode.Byte, this.capacityBaseValues[i+2] },
@@ -1028,7 +1028,7 @@ namespace NfEsp32Display.QrCode
                         ),
                         new VersionInfoDetails(
                              EccLevel.M,
-                             new Dictionary<EncodingMode,int>(){
+                             new Hashtable(){
                                  { EncodingMode.Numeric, this.capacityBaseValues[i+4] },
                                  { EncodingMode.Alphanumeric, this.capacityBaseValues[i+5] },
                                  { EncodingMode.Byte, this.capacityBaseValues[i+6] },
@@ -1037,7 +1037,7 @@ namespace NfEsp32Display.QrCode
                         ),
                         new VersionInfoDetails(
                              EccLevel.Q,
-                             new Dictionary<EncodingMode,int>(){
+                             new Hashtable(){
                                  { EncodingMode.Numeric, this.capacityBaseValues[i+8] },
                                  { EncodingMode.Alphanumeric, this.capacityBaseValues[i+9] },
                                  { EncodingMode.Byte, this.capacityBaseValues[i+10] },
@@ -1046,7 +1046,7 @@ namespace NfEsp32Display.QrCode
                         ),
                         new VersionInfoDetails(
                              EccLevel.H,
-                             new Dictionary<EncodingMode,int>(){
+                             new Hashtable(){
                                  { EncodingMode.Numeric, this.capacityBaseValues[i+12] },
                                  { EncodingMode.Alphanumeric, this.capacityBaseValues[i+13] },
                                  { EncodingMode.Byte, this.capacityBaseValues[i+14] },
@@ -1151,14 +1151,14 @@ namespace NfEsp32Display.QrCode
 
         private struct VersionInfoDetails
         {
-            public VersionInfoDetails(EccLevel errorCorrectionLevel, Dictionary<EncodingMode, int> capacityDict)
+            public VersionInfoDetails(EccLevel errorCorrectionLevel, Hashtable capacityDict) // EncodingMode, int
             {
                 this.ErrorCorrectionLevel = errorCorrectionLevel;
                 this.CapacityDict = capacityDict;
             }
 
             public EccLevel ErrorCorrectionLevel { get; }
-            public Dictionary<EncodingMode, int> CapacityDict { get; }
+            public Hashtable CapacityDict { get; }
         }
 
         private struct Antilog
