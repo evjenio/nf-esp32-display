@@ -20,6 +20,7 @@
   <ItemGroup>
     <Compile Include="BitArray.cs" />
     <Compile Include="ECCLevel.cs" />
+    <Compile Include="EqualityComparer.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="List.cs" />
     <Compile Include="QRCodeData.cs" />
