@@ -6,7 +6,7 @@ using NfEsp32Display.Resources;
 
 namespace NfEsp32Display
 {
-    using Dino = Bitmaps.Dino;
+    using Img = Bitmaps.Num1;
 
     public class Program
     {
@@ -14,13 +14,19 @@ namespace NfEsp32Display
         {
             using var display = new Display();
             display.Init();
+            display.EraseDisplayFast();
+
             display.SetRotation(1);
 
-            display.SetFontSize(2);
-            display.SetCursor(110, 35);
+            display.SetFontSize(3);
+            display.SetCursor(0, 0);
 
             display.FillScreen(Color.White);
-            display.DrawBitmap(Dino.Bitmap, 0, 0, Dino.Width, Dino.Heigth, Color.White);
+            display.DrawBitmap(Img.Bitmap, 0, 28, Img.Width, Img.Heigth, Color.White);
+            display.DrawBitmap(Img.Bitmap, Img.Width + 0, 28, Img.Width, Img.Heigth, Color.White);
+            display.DrawBitmap(Img.Bitmap, 2 * (Img.Width + 0), 28, Img.Width, Img.Heigth, Color.White);
+            display.DrawBitmap(Img.Bitmap, 3 * (Img.Width + 0), 28, Img.Width, Img.Heigth, Color.White);
+
             display.Write("Hello world!");
             display.UpdateWindow(0, 0, display.Width, display.Height);
 
